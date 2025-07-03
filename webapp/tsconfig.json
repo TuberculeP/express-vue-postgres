@@ -19,6 +19,5 @@
     "noUncheckedSideEffectImports": true
   },
   "include": ["**/*.ts", "**/*.vue"],
-  "exclude": ["node_modules"],
-  "extends": "@vue/tsconfig/tsconfig.dom.json"
+  "exclude": ["node_modules"]
 }
