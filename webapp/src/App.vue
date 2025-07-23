@@ -1,10 +1,22 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import AppLayout from "./layouts/AppLayout.vue";
+import { onSocketConnected } from "./lib/utils/websocket";
 
-const test = ref(0);
+onSocketConnected((socket) => {
+  socket.emit("test", { message: "Hello from Vue!" });
+});
 </script>
 
 <template>
-  <h1>Webapp</h1>
-  <button @click="test++">{{ test }}</button>
+  <AppLayout>
+    <RouterView />
+  </AppLayout>
 </template>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+</style>
