@@ -3,8 +3,16 @@ import { User } from "../../config/entities/User";
 import pg from "../../config/db.config";
 import bcrypt from "bcrypt";
 import passport from "passport";
+import { isGoogleAuthEnabled } from "../../config/passport.config";
 
 const authRouter = Router();
+
+// Config endpoint - returns auth configuration for the frontend
+authRouter.get("/config", (_req, res) => {
+  res.json({
+    googleAuthEnabled: isGoogleAuthEnabled(),
+  });
+});
 
 authRouter.post("/register", async (req, res) => {
   // Validate user
@@ -75,5 +83,21 @@ authRouter.post("/logout", (req, res) => {
     res.status(200).json({ message: "Logout successful" });
   });
 });
+
+// Google OAuth routes
+authRouter.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] }),
+);
+
+authRouter.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    failureRedirect: "/login?error=google_auth_failed",
+  }),
+  (_req, res) => {
+    res.redirect("/");
+  },
+);
 
 export default authRouter;
