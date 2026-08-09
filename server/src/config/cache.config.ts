@@ -34,12 +34,27 @@ const createStore = () => {
   }
 };
 
+const getSessionSecret = () => {
+  const { SESSION_SECRET, NODE_ENV } = process.env;
+  if (!SESSION_SECRET) {
+    if (NODE_ENV === "production") {
+      throw new Error("SESSION_SECRET is required in production");
+    }
+    console.warn(
+      "SESSION_SECRET not provided. Using an insecure default for development only.",
+    );
+    return "dev-only-insecure-session-secret";
+  }
+  return SESSION_SECRET;
+};
+
 // Will be used in app.use
 export default function customSession() {
+  const secret = getSessionSecret();
   const store = createStore();
 
   return session({
-    secret: "you'll never guess this (poulet froid)",
+    secret,
     resave: false,
     saveUninitialized: false,
     cookie: { secure: false },

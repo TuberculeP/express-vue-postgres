@@ -6,7 +6,7 @@ Stack full-stack moderne avec Express.js, Vue 3, PostgreSQL/SQLite, authentifica
 
 | Couche | Technologies |
 |--------|-------------|
-| Backend | Express.js, TypeORM, Passport.js, Socket.io, Multer |
+| Backend | Express.js, TypeORM, Passport.js, Socket.io, Multer, Zod, Helmet, express-rate-limit |
 | Frontend | Vue 3 (Composition API), Pinia, Vue Router, Axios |
 | UI | Tailwind CSS v4, shadcn-vue (reka-ui), Lucide Icons |
 | Base de donnees | PostgreSQL (prod) / SQLite (dev) |
@@ -26,7 +26,10 @@ Stack full-stack moderne avec Express.js, Vue 3, PostgreSQL/SQLite, authentifica
 │   │   └── entities/              # Entites TypeORM (User, Upload)
 │   ├── routes/
 │   │   ├── auth/index.ts          # Routes d'authentification
+│   │   ├── admin/                 # Routes admin (isAuth + isAdmin), exemple CRUD users
 │   │   └── shared/uploads.ts      # Route d'upload de fichiers
+│   ├── middleware/                # validate, error, rateLimiter, auth (isAuth/isAdmin)
+│   ├── scripts/seedAdmin.ts       # Cree/promeut le compte admin par defaut
 │   └── events/                    # Handlers WebSocket
 │
 ├── webapp/src/
@@ -63,9 +66,16 @@ L'application demarre sur http://localhost:3000
 
 ## Variables d'environnement
 
-Creer un fichier `.env` a la racine :
+Copier `.env.example` vers `.env` a la racine et completer les valeurs :
 
 ```env
+# Secret de signature des cookies de session (requis en production)
+SESSION_SECRET=change-me
+
+# Compte admin cree/promu automatiquement au demarrage (optionnel)
+DEFAULT_ADMIN_EMAIL=
+DEFAULT_ADMIN_PASSWORD=
+
 # Base de donnees (optionnel en dev - utilise SQLite par defaut)
 POSTGRES_URL=postgres://user:password@localhost:5432/dbname
 
@@ -74,6 +84,8 @@ GOOGLE_CLIENT_ID=votre_client_id
 GOOGLE_CLIENT_SECRET=votre_client_secret
 GOOGLE_CALLBACK_URL=/api/auth/google/callback
 ```
+
+En production, le serveur refuse de demarrer si `SESSION_SECRET` est absent.
 
 ## Scripts disponibles
 
@@ -104,6 +116,19 @@ GOOGLE_CALLBACK_URL=/api/auth/google/callback
 | Methode | Route | Description |
 |---------|-------|-------------|
 | POST | `/uploads` | Upload de fichier (authentifie, max 10MB) |
+
+### Admin (`/api/admin`)
+
+Toutes les routes admin passent par `isAuth` puis `isAdmin` (`server/src/middleware/auth.middleware.ts`), qui verifient la session et `req.user.role === "ROLE_ADMIN"`.
+
+| Methode | Route | Description |
+|---------|-------|-------------|
+| GET | `/users` | Liste paginee des utilisateurs (`?page`, `?limit`, `?search`) |
+| GET | `/users/:id` | Detail d'un utilisateur |
+| PATCH | `/users/:id` | Modifie `role` et/ou `isActive` (interdit de se demoter/desactiver soi-meme) |
+| DELETE | `/users/:id` | Desactivation (soft delete) |
+
+Cette route `admin/users` sert d'exemple de CRUD admin, a dupliquer pour toute autre entite necessitant une gestion back-office.
 
 ## Utilitaires frontend
 
@@ -234,6 +259,33 @@ export class Post {
 
 Exporter dans `server/src/config/entities/index.ts` et ajouter a la liste `entities` dans `db.config.ts`.
 
+## Migrations TypeORM
+
+En developpement, `synchronize: true` reste actif (schema auto-synchronise a partir des entites, pratique pour iterer vite). En production (`NODE_ENV=production`), `synchronize` est desactive : le schema doit passer par des migrations versionnees, executees automatiquement au demarrage (`pg.runMigrations()` dans `main.ts`).
+
+Apres avoir modifie une entite :
+
+```bash
+# Necessite une base Postgres accessible via POSTGRES_URL
+npm run migration:generate -- server/src/migrations/NomDeLaMigration
+
+# Appliquer les migrations en attente
+npm run migration:run
+
+# Annuler la derniere migration appliquee
+npm run migration:revert
+```
+
+## Compte admin par defaut
+
+Si `DEFAULT_ADMIN_EMAIL` et `DEFAULT_ADMIN_PASSWORD` sont definis dans `.env`, `seedDefaultAdmin()` (`server/src/scripts/seedAdmin.ts`) s'execute a chaque demarrage :
+
+- Si l'email n'existe pas encore, un compte `ROLE_ADMIN` est cree avec ce mot de passe.
+- Si l'email existe deja, il est promu `ROLE_ADMIN` s'il ne l'est pas deja.
+- Si les variables sont absentes, l'operation est silencieusement ignoree.
+
+Un utilisateur admin peut ensuite gerer les autres utilisateurs sur `/app/admin/users` (lien "Admin" visible dans le header une fois connecte).
+
 ## Docker
 
 ```bash
@@ -258,3 +310,7 @@ Services :
 - **Fichiers** : Stockes dans `public/uploads/`, metadonnees en BDD
 - **Etat frontend** : Utiliser `storeToRefs()` pour la reactivite Pinia
 - **Classes CSS** : Utiliser `cn()` pour combiner les classes Tailwind
+- **Validation** : Schemas Zod par route (`*.schemas.ts`), appliques via `validateBody()` (`server/src/middleware/validate.middleware.ts`)
+- **Erreurs backend** : Wrapper les handlers async avec `asyncHandler()`, lever une `AppError(message, statusCode)` pour les erreurs metier - le middleware final (`server/src/middleware/error.middleware.ts`) formate la reponse
+- **Rate limiting** : `authLimiter` applique sur `/auth/login` et `/auth/register` (`server/src/middleware/rateLimiter.middleware.ts`)
+- **Routes admin** : Monter sous `server/src/routes/admin/`, proteger avec `isAuth, isAdmin` (`server/src/middleware/auth.middleware.ts`). Guard frontend correspondant : `adminGuard` dans `router.ts` (meta `requiresAdmin`)

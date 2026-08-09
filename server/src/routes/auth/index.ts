@@ -1,9 +1,15 @@
 import { Router } from "express";
+import { QueryFailedError } from "typeorm";
 import { User } from "../../config/entities/User";
 import pg from "../../config/db.config";
 import bcrypt from "bcrypt";
 import passport from "passport";
 import { isGoogleAuthEnabled } from "../../config/passport.config";
+import { validateBody } from "../../middleware/validate.middleware";
+import { authLimiter } from "../../middleware/rateLimiter.middleware";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { AppError } from "../../utils/AppError";
+import { registerSchema, loginSchema } from "./auth.schemas";
 
 const authRouter = Router();
 
@@ -14,35 +20,45 @@ authRouter.get("/config", (_req, res) => {
   });
 });
 
-authRouter.post("/register", async (req, res) => {
-  // Validate user
-  const { firstName, lastName, email, password } = req.body;
-  if (!firstName || !lastName || !email || !password) {
-    res.status(400).json({ message: "All fields are required" });
-    return;
-  }
+authRouter.post(
+  "/register",
+  authLimiter,
+  validateBody(registerSchema),
+  asyncHandler(async (req, res) => {
+    const { firstName, lastName, email, password } = req.body;
 
-  const hash = bcrypt.hashSync(password, 10);
+    const hash = bcrypt.hashSync(password, 10);
 
-  const newUser = new User();
+    const newUser = new User();
 
-  newUser.firstName = firstName;
-  newUser.lastName = lastName;
-  newUser.email = email;
-  newUser.password = hash;
+    newUser.firstName = firstName;
+    newUser.lastName = lastName;
+    newUser.email = email;
+    newUser.password = hash;
 
-  // Save user to the database
-  const userRepository = pg.getRepository(User);
-  const result = await userRepository.save(newUser);
+    const userRepository = pg.getRepository(User);
 
-  res.status(201).json({
-    message: "User registered successfully",
-    user: result,
-  });
-});
+    let result: User;
+    try {
+      result = await userRepository.save(newUser);
+    } catch (err) {
+      if (err instanceof QueryFailedError) {
+        throw new AppError("Email already in use", 409);
+      }
+      throw err;
+    }
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user: result,
+    });
+  }),
+);
 
 authRouter.post(
   "/login",
+  authLimiter,
+  validateBody(loginSchema),
   (req, res, next) => {
     if (req.isAuthenticated()) {
       res.status(200).json({ message: "Already logged in", user: req.user });

@@ -3,6 +3,7 @@ import "dotenv/config";
 import pg from "./config/db.config";
 import path from "path";
 import express from "express";
+import helmet from "helmet";
 import { createServer as createViteServer } from "vite";
 import { createServer as createHttpServer } from "http";
 import { Server as WSServer } from "socket.io";
@@ -11,6 +12,8 @@ import router from "./routes";
 import cookieParser from "cookie-parser";
 import passport from "passport";
 import initializePassport from "./config/passport.config";
+import { errorHandler } from "./middleware/error.middleware";
+import { seedDefaultAdmin } from "./scripts/seedAdmin";
 
 import customSession from "./config/cache.config";
 
@@ -22,6 +25,7 @@ const main = async () => {
   const app = express();
   const server = createHttpServer(app);
   app
+    .use(helmet())
     .use(express.json())
     .use(customSession())
     .use(cookieParser())
@@ -30,6 +34,7 @@ const main = async () => {
     .use(passport.session());
 
   app.use("/api", router);
+  app.use("/api", errorHandler);
 
   const vite = await createViteServer();
 
@@ -61,6 +66,11 @@ const main = async () => {
 // start typeorm migration and server
 (async () => {
   await pg.initialize();
-  await pg.runMigrations();
+  // Migrations only run in production: dev relies on `synchronize: true`
+  // instead, and running both against the same schema conflicts.
+  if (process.env.NODE_ENV === "production") {
+    await pg.runMigrations();
+  }
+  await seedDefaultAdmin();
   await main();
 })();
