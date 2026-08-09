@@ -110,6 +110,9 @@ En production, le serveur refuse de demarrer si `SESSION_SECRET` est absent.
 | POST | `/logout` | Deconnexion |
 | GET | `/google` | Initie le flow Google OAuth |
 | GET | `/google/callback` | Callback Google OAuth |
+| GET | `/me/export` | RGPD (portabilite) : telecharge les donnees de l'utilisateur connecte en JSON |
+| PATCH | `/me` | RGPD (rectification) : modifie son propre `username` |
+| DELETE | `/me` | RGPD (effacement) : anonymise son propre compte et deconnecte |
 
 ### Fichiers (`/api/shared`)
 
@@ -126,9 +129,11 @@ Toutes les routes admin passent par `isAuth` puis `isAdmin` (`server/src/middlew
 | GET | `/users` | Liste paginee des utilisateurs (`?page`, `?limit`, `?search`) |
 | GET | `/users/:id` | Detail d'un utilisateur |
 | PATCH | `/users/:id` | Modifie `role` et/ou `isActive` (interdit de se demoter/desactiver soi-meme) |
-| DELETE | `/users/:id` | Desactivation (soft delete) |
+| DELETE | `/users/:id` | Suspension reversible (`isActive=false`, interdit sur soi-meme) |
+| POST | `/users/:id/erase` | RGPD (effacement) : anonymise definitivement l'utilisateur cible (irreversible, interdit sur soi-meme) |
+| GET | `/audit-log` | Historique paginé des actions admin (`role_updated`, `deactivated`, `reactivated`, `anonymized`) |
 
-Cette route `admin/users` sert d'exemple de CRUD admin, a dupliquer pour toute autre entite necessitant une gestion back-office.
+Cette route `admin/users` sert d'exemple de CRUD admin, a dupliquer pour toute autre entite necessitant une gestion back-office. Chaque action de `PATCH`/`DELETE`/`erase` est tracee via `logAdminAction()` (`server/src/services/adminAudit.service.ts`).
 
 ## Utilitaires frontend
 
@@ -301,9 +306,11 @@ Services :
 - **Redis** (cache de sessions)
 - **App Node** (port 3000)
 
+**HTTPS** : ni Express ni Helmet ne terminent le TLS. En production, mettre l'app derriere un reverse proxy (Caddy, Nginx, Traefik) ou un load balancer manage qui gere le certificat.
+
 ## Conformite RGPD
 
-Ce template privilegie le pseudonymat (`username` unique, pas de nom/prenom reel) pour minimiser les donnees personnelles collectees par defaut. Voir [docs/RGPD-CHECKLIST.md](docs/RGPD-CHECKLIST.md) pour la checklist complete (ce qui est deja couvert, les points specifiques a la partie admin, et ce qui reste a decider projet par projet).
+Ce template privilegie le pseudonymat (`username` unique, pas de nom/prenom reel) pour minimiser les donnees personnelles collectees par defaut, et couvre deja les droits d'acces/rectification/effacement (`/api/auth/me/*`) ainsi que la tracabilite des actions admin (`/api/admin/audit-log`). Voir [docs/RGPD-CHECKLIST.md](docs/RGPD-CHECKLIST.md) pour le detail de ce qui est couvert, [server/src/middleware/README.md](server/src/middleware/README.md) et [server/src/config/README.md](server/src/config/README.md) pour ce qui reste a decider/implementer selon le projet (2FA admin, chiffrement au repos, sauvegardes...).
 
 ## Patterns et conventions
 

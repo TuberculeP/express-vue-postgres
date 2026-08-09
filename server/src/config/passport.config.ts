@@ -5,7 +5,6 @@ import pg from "./db.config";
 import bcrypt from "bcrypt";
 import { User } from "./entities/User";
 import { generateUniqueUsername } from "../utils/username";
-import _ from "lodash";
 
 export const isGoogleAuthEnabled = () => {
   const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = process.env;
@@ -37,6 +36,11 @@ export default function initializePassport() {
 
         if (!isPasswordValid) {
           cb(null, false, { message: "Invalid credentials" });
+          return;
+        }
+
+        if (!existingUser.isActive) {
+          cb(null, false, { message: "Account is deactivated" });
           return;
         }
 
@@ -114,7 +118,7 @@ export default function initializePassport() {
       if (!user) {
         return done(new Error("User not found"), false);
       }
-      done(null, _.omit(user, "password"));
+      done(null, { ...user, password: null });
     } catch (err) {
       done(err, false);
     }

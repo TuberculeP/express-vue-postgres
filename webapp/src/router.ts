@@ -53,6 +53,11 @@ const routes = [
     name: "admin-users",
     meta: { requiresAdmin: true },
   },
+  {
+    path: "/app/profile",
+    component: () => import("./views/ProfileView.vue"),
+    name: "profile",
+  },
 ];
 
 const getGuardedRoutes = () => {

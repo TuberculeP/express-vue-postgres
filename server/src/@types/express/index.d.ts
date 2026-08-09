@@ -3,8 +3,6 @@ import type { User as MyUser } from "../../config/entities/User";
 
 declare global {
   namespace Express {
-    interface User extends MyUser {
-      password?: string;
-    }
+    interface User extends MyUser {}
   }
 }

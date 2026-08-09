@@ -15,11 +15,11 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column({ nullable: true })
-  password?: string;
+  @Column({ type: "varchar", nullable: true })
+  password: string | null;
 
-  @Column({ nullable: true, unique: true })
-  googleId?: string;
+  @Column({ type: "varchar", nullable: true, unique: true })
+  googleId: string | null;
 
   @Column({ unique: true })
   username: string;

@@ -4,6 +4,8 @@ import { User } from "../../config/entities/User";
 import { validateBody } from "../../middleware/validate.middleware";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { AppError } from "../../utils/AppError";
+import { anonymizeUser } from "../../utils/anonymizeUser";
+import { logAdminAction } from "../../services/adminAudit.service";
 import { updateUserSchema } from "./admin.schemas";
 
 const adminUsersRouter = Router();
@@ -88,8 +90,21 @@ adminUsersRouter.patch(
       }
     }
 
-    if (role !== undefined) user.role = role;
-    if (isActive !== undefined) user.isActive = isActive;
+    if (role !== undefined && role !== user.role) {
+      await logAdminAction(req.user!, "role_updated", user.id, {
+        from: user.role,
+        to: role,
+      });
+      user.role = role;
+    }
+    if (isActive !== undefined && isActive !== user.isActive) {
+      await logAdminAction(
+        req.user!,
+        isActive ? "reactivated" : "deactivated",
+        user.id,
+      );
+      user.isActive = isActive;
+    }
 
     await repo.save(user);
 
@@ -97,7 +112,7 @@ adminUsersRouter.patch(
   }),
 );
 
-// DELETE /api/admin/users/:id - Soft delete (deactivate) a user
+// DELETE /api/admin/users/:id - Soft delete (deactivate) a user, reversible
 adminUsersRouter.delete(
   "/:id",
   asyncHandler(async (req, res) => {
@@ -113,8 +128,30 @@ adminUsersRouter.delete(
 
     user.isActive = false;
     await repo.save(user);
+    await logAdminAction(req.user!, "deactivated", user.id);
 
     res.json({ message: "User deactivated" });
+  }),
+);
+
+// POST /api/admin/users/:id/erase - Right to erasure: irreversible anonymization
+adminUsersRouter.post(
+  "/:id/erase",
+  asyncHandler(async (req, res) => {
+    if (req.params.id === req.user!.id) {
+      throw new AppError("Cannot erase yourself", 400);
+    }
+
+    const repo = pg.getRepository(User);
+    const user = await repo.findOne({ where: { id: req.params.id } });
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+
+    await anonymizeUser(user);
+    await logAdminAction(req.user!, "anonymized", user.id);
+
+    res.json({ message: "User data erased" });
   }),
 );
 

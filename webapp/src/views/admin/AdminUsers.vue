@@ -56,22 +56,31 @@
                   </span>
                 </td>
                 <td class="py-2 pr-4">
-                  <Button
-                    v-if="user.isActive"
-                    variant="destructive"
-                    size="sm"
-                    @click="deactivateUser(user.id)"
-                  >
-                    Desactiver
-                  </Button>
-                  <Button
-                    v-else
-                    variant="outline"
-                    size="sm"
-                    @click="activateUser(user.id)"
-                  >
-                    Activer
-                  </Button>
+                  <div class="flex flex-wrap gap-2">
+                    <Button
+                      v-if="user.isActive"
+                      variant="secondary"
+                      size="sm"
+                      @click="deactivateUser(user.id)"
+                    >
+                      Desactiver
+                    </Button>
+                    <Button
+                      v-else
+                      variant="outline"
+                      size="sm"
+                      @click="activateUser(user.id)"
+                    >
+                      Activer
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      @click="eraseUser(user.id)"
+                    >
+                      Effacer les donnees
+                    </Button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -106,6 +115,32 @@
         </div>
       </CardContent>
     </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle>Historique des actions admin</CardTitle>
+        <CardDescription>
+          Tracabilite des changements de role, suspensions et effacements.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p v-if="auditLog.length === 0" class="text-sm text-muted-foreground">
+          Aucune action pour le moment.
+        </p>
+        <ul v-else class="space-y-2 text-sm">
+          <li
+            v-for="entry in auditLog"
+            :key="entry.id"
+            class="border-b pb-2 text-muted-foreground"
+          >
+            <span class="text-foreground">{{ entry.actor.username }}</span>
+            — {{ actionLabel(entry.action) }} (utilisateur
+            {{ entry.targetUserId }}) —
+            {{ new Date(entry.createdAt).toLocaleString() }}
+          </li>
+        </ul>
+      </CardContent>
+    </Card>
   </div>
 </template>
 
@@ -125,10 +160,31 @@ import type { User } from "@/lib/utils/types";
 
 type AdminUser = Pick<User, "id" | "email" | "username" | "role" | "isActive">;
 
+type AuditLogEntry = {
+  id: string;
+  action: string;
+  targetUserId: string;
+  details: string | null;
+  createdAt: string;
+  actor: { id: string; username: string };
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  role_updated: "changement de role",
+  deactivated: "suspension",
+  reactivated: "reactivation",
+  anonymized: "effacement des donnees",
+};
+
+function actionLabel(action: string) {
+  return ACTION_LABELS[action] ?? action;
+}
+
 const users = ref<AdminUser[]>([]);
 const pagination = reactive({ page: 1, limit: 20, total: 0, pages: 0 });
 const search = ref("");
 const error = ref("");
+const auditLog = ref<AuditLogEntry[]>([]);
 
 let searchTimeout: ReturnType<typeof setTimeout>;
 watch(search, () => {
@@ -136,7 +192,19 @@ watch(search, () => {
   searchTimeout = setTimeout(() => fetchUsers(1), 300);
 });
 
-onMounted(() => fetchUsers());
+onMounted(() => {
+  fetchUsers();
+  fetchAuditLog();
+});
+
+async function fetchAuditLog() {
+  const result = await apiClient.get<{ entries: AuditLogEntry[] }>(
+    "/admin/audit-log",
+  );
+  if (result.data) {
+    auditLog.value = result.data.entries;
+  }
+}
 
 async function fetchUsers(page = pagination.page) {
   error.value = "";
@@ -176,6 +244,7 @@ async function updateRole(userId: string, role: string) {
   }
   const index = users.value.findIndex((u) => u.id === userId);
   if (index >= 0 && result.data) users.value[index] = result.data.user;
+  fetchAuditLog();
 }
 
 async function deactivateUser(userId: string) {
@@ -189,6 +258,28 @@ async function deactivateUser(userId: string) {
   }
   const user = users.value.find((u) => u.id === userId);
   if (user) user.isActive = false;
+  fetchAuditLog();
+}
+
+async function eraseUser(userId: string) {
+  if (
+    !window.confirm(
+      "Effacer definitivement les donnees personnelles de cet utilisateur ? Cette action est irreversible.",
+    )
+  ) {
+    return;
+  }
+
+  error.value = "";
+  const result = await apiClient.post<{ message: string }>(
+    `/admin/users/${userId}/erase`,
+  );
+  if (result.error) {
+    error.value = result.error;
+    return;
+  }
+  fetchUsers();
+  fetchAuditLog();
 }
 
 async function activateUser(userId: string) {
@@ -203,5 +294,6 @@ async function activateUser(userId: string) {
   }
   const index = users.value.findIndex((u) => u.id === userId);
   if (index >= 0 && result.data) users.value[index] = result.data.user;
+  fetchAuditLog();
 }
 </script>

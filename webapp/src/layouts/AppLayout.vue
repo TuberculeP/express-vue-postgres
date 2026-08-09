@@ -4,6 +4,12 @@
       <span class="text-foreground">Bienvenue, {{ user?.username }}</span>
       <div class="flex items-center gap-2">
         <router-link
+          :to="{ name: 'profile' }"
+          class="text-sm text-primary underline-offset-4 hover:underline"
+        >
+          Mon compte
+        </router-link>
+        <router-link
           v-if="user?.role === 'ROLE_ADMIN'"
           :to="{ name: 'admin-users' }"
           class="text-sm text-primary underline-offset-4 hover:underline"
