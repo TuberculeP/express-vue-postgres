@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "rootDir": "src",
     "module": "CommonJS",
     "moduleResolution": "node",
     "noImplicitReturns": true,
@@ -23,7 +24,8 @@
     "typeRoots": ["../node_modules/@types"]
   },
   "compileOnSave": true,
-  "include": ["src", "__tests__"],
+  "include": ["src"],
+  "exclude": ["__tests__"],
   "ts-node": {
     "files": true
   }
