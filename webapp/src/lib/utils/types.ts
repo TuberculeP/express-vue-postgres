@@ -13,8 +13,7 @@ export type Note = {
 export type User = {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  username: string;
   isActive: boolean;
   role: string;
   createdAt: Date;

@@ -8,25 +8,14 @@
         </CardDescription>
       </CardHeader>
       <CardContent class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <label class="text-sm font-medium" for="firstName">Prénom</label>
-            <Input
-              id="firstName"
-              type="text"
-              v-model="form.firstName"
-              placeholder="Jean"
-            />
-          </div>
-          <div class="space-y-2">
-            <label class="text-sm font-medium" for="lastName">Nom</label>
-            <Input
-              id="lastName"
-              type="text"
-              v-model="form.lastName"
-              placeholder="Dupont"
-            />
-          </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium" for="username">Pseudo</label>
+          <Input
+            id="username"
+            type="text"
+            v-model="form.username"
+            placeholder="jean_d"
+          />
         </div>
         <div class="space-y-2">
           <label class="text-sm font-medium" for="email">Email</label>
@@ -126,8 +115,7 @@ const router = useRouter();
 const form = reactive({
   email: "",
   password: "",
-  firstName: "",
-  lastName: "",
+  username: "",
 });
 
 const isLoading = ref(false);

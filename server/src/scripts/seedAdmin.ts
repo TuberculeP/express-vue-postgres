@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import pg from "../config/db.config";
 import { User } from "../config/entities/User";
+import { generateUniqueUsername } from "../utils/username";
 
 export async function seedDefaultAdmin(): Promise<void> {
   const email = process.env.DEFAULT_ADMIN_EMAIL;
@@ -26,8 +27,7 @@ export async function seedDefaultAdmin(): Promise<void> {
   const admin = repo.create({
     email,
     password: bcrypt.hashSync(password, 10),
-    firstName: "Admin",
-    lastName: "User",
+    username: await generateUniqueUsername("admin"),
     role: "ROLE_ADMIN",
     isActive: true,
   });

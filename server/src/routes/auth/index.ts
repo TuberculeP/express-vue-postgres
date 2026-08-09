@@ -25,14 +25,13 @@ authRouter.post(
   authLimiter,
   validateBody(registerSchema),
   asyncHandler(async (req, res) => {
-    const { firstName, lastName, email, password } = req.body;
+    const { username, email, password } = req.body;
 
     const hash = bcrypt.hashSync(password, 10);
 
     const newUser = new User();
 
-    newUser.firstName = firstName;
-    newUser.lastName = lastName;
+    newUser.username = username;
     newUser.email = email;
     newUser.password = hash;
 
@@ -43,6 +42,13 @@ authRouter.post(
       result = await userRepository.save(newUser);
     } catch (err) {
       if (err instanceof QueryFailedError) {
+        const detail = String(
+          (err as { driverError?: { detail?: string } }).driverError?.detail ??
+            err.message,
+        );
+        if (detail.includes("username")) {
+          throw new AppError("Username already in use", 409);
+        }
         throw new AppError("Email already in use", 409);
       }
       throw err;

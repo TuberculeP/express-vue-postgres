@@ -10,7 +10,7 @@
       <CardContent class="space-y-4">
         <Input
           v-model="search"
-          placeholder="Rechercher par email ou nom..."
+          placeholder="Rechercher par email ou pseudo..."
           class="max-w-sm"
         />
 
@@ -21,7 +21,7 @@
             <thead>
               <tr class="border-b text-left text-muted-foreground">
                 <th class="py-2 pr-4">Email</th>
-                <th class="py-2 pr-4">Nom</th>
+                <th class="py-2 pr-4">Pseudo</th>
                 <th class="py-2 pr-4">Role</th>
                 <th class="py-2 pr-4">Statut</th>
                 <th class="py-2 pr-4">Actions</th>
@@ -30,9 +30,7 @@
             <tbody>
               <tr v-for="user in users" :key="user.id" class="border-b">
                 <td class="py-2 pr-4">{{ user.email }}</td>
-                <td class="py-2 pr-4">
-                  {{ user.firstName }} {{ user.lastName }}
-                </td>
+                <td class="py-2 pr-4">{{ user.username }}</td>
                 <td class="py-2 pr-4">
                   <select
                     :value="user.role"
@@ -125,10 +123,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { User } from "@/lib/utils/types";
 
-type AdminUser = Pick<
-  User,
-  "id" | "email" | "firstName" | "lastName" | "role" | "isActive"
->;
+type AdminUser = Pick<User, "id" | "email" | "username" | "role" | "isActive">;
 
 const users = ref<AdminUser[]>([]);
 const pagination = reactive({ page: 1, limit: 20, total: 0, pages: 0 });

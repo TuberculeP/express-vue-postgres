@@ -104,7 +104,7 @@ En production, le serveur refuse de demarrer si `SESSION_SECRET` est absent.
 | Methode | Route | Description |
 |---------|-------|-------------|
 | GET | `/config` | Retourne `{ googleAuthEnabled: boolean }` |
-| POST | `/register` | Inscription (firstName, lastName, email, password) |
+| POST | `/register` | Inscription (username, email, password) |
 | POST | `/login` | Connexion (email, password) |
 | GET | `/check` | Verifie si l'utilisateur est connecte |
 | POST | `/logout` | Deconnexion |
@@ -300,6 +300,10 @@ Services :
 - **PostgreSQL** (port 5432)
 - **Redis** (cache de sessions)
 - **App Node** (port 3000)
+
+## Conformite RGPD
+
+Ce template privilegie le pseudonymat (`username` unique, pas de nom/prenom reel) pour minimiser les donnees personnelles collectees par defaut. Voir [docs/RGPD-CHECKLIST.md](docs/RGPD-CHECKLIST.md) pour la checklist complete (ce qui est deja couvert, les points specifiques a la partie admin, et ce qui reste a decider projet par projet).
 
 ## Patterns et conventions
 

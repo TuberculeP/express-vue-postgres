@@ -21,11 +21,8 @@ export class User {
   @Column({ nullable: true, unique: true })
   googleId?: string;
 
-  @Column()
-  firstName: string;
-
-  @Column()
-  lastName: string;
+  @Column({ unique: true })
+  username: string;
 
   @Column({ default: true })
   isActive: boolean;

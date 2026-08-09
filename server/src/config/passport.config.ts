@@ -4,6 +4,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import pg from "./db.config";
 import bcrypt from "bcrypt";
 import { User } from "./entities/User";
+import { generateUniqueUsername } from "../utils/username";
 import _ from "lodash";
 
 export const isGoogleAuthEnabled = () => {
@@ -80,17 +81,13 @@ export default function initializePassport() {
 
             if (!user) {
               // Créer un nouveau compte
+              const email = profile.emails?.[0]?.value ?? "";
               user = new User();
               user.googleId = profile.id;
-              user.email = profile.emails?.[0]?.value ?? "";
-              user.firstName =
-                profile.name?.givenName ||
-                profile.displayName?.split(" ")[0] ||
-                "User";
-              user.lastName =
-                profile.name?.familyName ||
-                profile.displayName?.split(" ").slice(1).join(" ") ||
-                "";
+              user.email = email;
+              user.username = await generateUniqueUsername(
+                profile.displayName || email.split("@")[0] || "user",
+              );
               user = await userRepository.save(user);
             }
 

@@ -11,8 +11,7 @@ const adminUsersRouter = Router();
 const USER_LIST_FIELDS = [
   "id",
   "email",
-  "firstName",
-  "lastName",
+  "username",
   "role",
   "isActive",
   "createdAt",
@@ -36,7 +35,7 @@ adminUsersRouter.get(
 
     if (search) {
       query.where(
-        "LOWER(user.email) LIKE :search OR LOWER(user.firstName) LIKE :search OR LOWER(user.lastName) LIKE :search",
+        "LOWER(user.email) LIKE :search OR LOWER(user.username) LIKE :search",
         { search: `%${search.toLowerCase()}%` },
       );
     }
