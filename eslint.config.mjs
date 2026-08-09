@@ -12,6 +12,7 @@ const sharedConfig = {
     "unused-imports": eslintPluginUnusedImports,
   },
   rules: {
+    "no-console": "off",
     "no-unused-vars": "off",
     "unused-imports/no-unused-imports": "warn",
     "unused-imports/no-unused-vars": [
@@ -23,7 +24,12 @@ const sharedConfig = {
         argsIgnorePattern: "^_",
       },
     ],
-    "prettier/prettier": "error",
+    "prettier/prettier": [
+      "error",
+      {
+        endOfLine: "auto",
+      },
+    ],
   },
 };
 
@@ -73,6 +79,16 @@ const webappConfig = {
 };
 
 export default [
+  {
+    ignores: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      ".git/**",
+      "coverage/**",
+      "*.min.js",
+    ],
+  },
   serverConfig,
   webappConfig,
   sharedConfig,

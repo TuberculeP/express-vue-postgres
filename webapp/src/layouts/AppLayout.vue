@@ -1,6 +1,9 @@
 <template>
   <div class="min-h-screen bg-background">
-    <header v-if="isAuthenticated" class="border-b p-4 flex items-center justify-between">
+    <header
+      v-if="isAuthenticated"
+      class="border-b p-4 flex items-center justify-between"
+    >
       <span class="text-foreground">Bienvenue, {{ user?.username }}</span>
       <div class="flex items-center gap-2">
         <router-link
