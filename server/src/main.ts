@@ -66,9 +66,10 @@ const main = async () => {
 // start typeorm migration and server
 (async () => {
   await pg.initialize();
-  // Migrations only run in production: dev relies on `synchronize: true`
-  // instead, and running both against the same schema conflicts.
-  if (process.env.NODE_ENV === "production") {
+  // Migrations only run against Postgres in production: dev and the
+  // SQLite fallback rely on `synchronize: true` instead, and running
+  // both against the same schema conflicts.
+  if (process.env.NODE_ENV === "production" && process.env.POSTGRES_URL) {
     await pg.runMigrations();
   }
   await seedDefaultAdmin();

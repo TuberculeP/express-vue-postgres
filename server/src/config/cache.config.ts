@@ -1,4 +1,4 @@
-// The configuration for the cache system, including Redis (prod) and SQLite (dev) session stores
+// The configuration for the cache system: Redis when REDIS_URL is set, SQLite otherwise
 
 import "dotenv/config";
 import session from "express-session";
@@ -11,10 +11,9 @@ const DEFAULT_TLL = 60 * 60 * 24; // 1 day in seconds
 const DEFAULT_PREFIX = "sess:";
 
 const createStore = () => {
-  if (process.env.NODE_ENV === "production") {
-    const redisClient = createClient({
-      url: "redis://cache", // Use the Docker service name for Redis
-    });
+  const { REDIS_URL } = process.env;
+  if (REDIS_URL) {
+    const redisClient = createClient({ url: REDIS_URL });
     redisClient.connect().catch(console.error);
 
     return new RedisStore({

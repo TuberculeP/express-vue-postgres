@@ -5,7 +5,6 @@ import { DataSource } from "typeorm";
 import entities from "./entities";
 
 const { POSTGRES_URL, NODE_ENV } = process.env;
-const synchronize = NODE_ENV !== "production";
 const migrations = [path.join(__dirname, "../migrations/*.{ts,js}")];
 
 let pg: DataSource;
@@ -14,19 +13,20 @@ if (POSTGRES_URL) {
   pg = new DataSource({
     type: "postgres",
     url: POSTGRES_URL,
-    synchronize,
+    synchronize: NODE_ENV !== "production",
     entities,
     migrations,
     migrationsTableName: "migration_table",
   });
 } else {
   console.warn("POSTGRES_URL not provided. Falling back to SQLite.");
+  // Migrations are written for Postgres, so SQLite always synchronizes:
+  // it's a disposable local DB, resetting it is fine.
   pg = new DataSource({
     type: "sqlite",
     database: "sqlite.db",
-    synchronize,
+    synchronize: true,
     entities,
-    migrations,
     migrationsTableName: "migration_table",
   });
 }
