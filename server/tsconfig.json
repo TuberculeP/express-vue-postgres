@@ -20,10 +20,10 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "typeRoots": ["@types", "./node_modules/@types"]
+    "typeRoots": ["../node_modules/@types"]
   },
   "compileOnSave": true,
-  "include": ["src"],
+  "include": ["src", "__tests__"],
   "ts-node": {
     "files": true
   }
