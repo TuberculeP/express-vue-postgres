@@ -24,10 +24,11 @@ const main = async () => {
 
   const app = express();
   const server = createHttpServer(app);
+  const sessionMiddleware = await customSession();
   app
     .use(helmet())
     .use(express.json())
-    .use(customSession())
+    .use(sessionMiddleware)
     .use(cookieParser())
     .use(express.json())
     .use(passport.initialize())
