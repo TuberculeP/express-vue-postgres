@@ -15,6 +15,7 @@ src/
     passport.config.ts        # local + google-oauth20 strategies
     storage.config.ts         # Multer -> public/uploads, 10MB max
     entities/index.ts         # entity registry (User, Upload, AdminAuditLog)
+    entities/CLAUDE.md        # SQLite/Postgres-portable column types
   routes/
     index.ts                  # mounts /auth, /shared, /admin
     auth/                     # register/login/logout/check/config, Google, /me (GDPR)
@@ -47,7 +48,7 @@ __tests__/                    # Jest (ts-jest, server/tsconfig.json)
 
 ## Add an entity
 
-1. `config/entities/X.ts` (uuid primary key, like `User.ts`).
+1. `config/entities/X.ts` (uuid primary key, like `User.ts`). Column types must exist on both SQLite and Postgres: read `config/entities/CLAUDE.md` first (e.g. never `type: "datetime"`).
 2. Add it to the array in `config/entities/index.ts` (not in `db.config.ts`).
 3. Dev schema auto-syncs. For prod: `npm run migration:generate -- server/src/migrations/<Name>` (needs a reachable Postgres via `POSTGRES_URL`), then `migration:run` / `migration:revert`.
 

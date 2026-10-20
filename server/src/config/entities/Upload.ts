@@ -4,6 +4,7 @@ import {
   ManyToOne,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
 } from "typeorm";
 import { User } from "./User";
 
@@ -21,7 +22,7 @@ export class Upload {
   @CreateDateColumn()
   createdAt: Date;
 
-  @CreateDateColumn()
+  @UpdateDateColumn()
   updatedAt: Date;
 
   @Column({ default: true })

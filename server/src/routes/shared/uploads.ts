@@ -25,9 +25,6 @@ uploadsRouter.post(
     const upload = new Upload();
     upload.filename = file.filename;
     upload.user = req.user;
-    upload.createdAt = new Date();
-    upload.updatedAt = new Date();
-    upload.isActive = true;
     await uploadRepository.save(upload);
 
     res.status(201).json({
